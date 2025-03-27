@@ -1,0 +1,38 @@
+@apiUrl = https://fw-teaching.fi/demo/wdbocms/api/v1
+
+# GET alla produkter
+GET {{apiUrl}}/products
+
+###
+# GET en produkt
+GET {{apiUrl}}/products/1002
+
+###
+# POST skapa produkt
+POST {{apiUrl}}/products/
+Content-Type: application/json
+
+{
+    "name":"Shoes",
+    "price":55
+}
+
+### 
+#PUT ändra produkt
+
+PUT {{apiUrl}}/products/1004
+Content-Type: application/json
+
+{
+    "name":"Shoes",
+    "price":25
+}
+
+###
+# PATCH ändra fält i en produkt
+PATCH {{apiUrl}}/application/1003
+Content-Type: application/json
+
+{
+    "price":7
+}
