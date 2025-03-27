@@ -30,7 +30,7 @@ Content-Type: application/json
 
 ###
 # PATCH ändra fält i en produkt
-PATCH {{apiUrl}}/application/1003
+PATCH {{apiUrl}}/products/1003
 Content-Type: application/json
 
 {
