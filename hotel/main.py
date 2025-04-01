@@ -1,4 +1,6 @@
-import uvicorn
+import os, uvicorn, psycopg
+from psycopg.rows import dict_row
+from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -6,6 +8,21 @@ PORT=8390
 
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+
+# Load enviroment variables
+load_dotenv()
+DB_URL = os.getenv("DB_URL")
+
+print(DB_URL)
+# Create DB connection
+conn = psycopg.connect(DB_URL, autocommit=True, row_factory=dict_row)
+
+
+
+@app.get("/temp")
+def temp():
+    return {"msg ":"Hello" }
+
 
 rooms = [
     {"nummer":"101","type":"single","status":"available"},
