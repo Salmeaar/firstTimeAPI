@@ -6,9 +6,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 PORT=8390
 
-app = FastAPI()
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
-
 # Load enviroment variables
 load_dotenv()
 DB_URL = os.getenv("DB_URL")
@@ -18,10 +15,18 @@ print(DB_URL)
 conn = psycopg.connect(DB_URL, autocommit=True, row_factory=dict_row)
 
 
+app = FastAPI()
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+
+
+
 
 @app.get("/temp")
 def temp():
-    return {"msg ":"Hello" }
+    with conn.cursor() as cur:
+        cur.execute("SELECT * FROM messages")
+        messages = cur.fetchall()
+        return messages
 
 
 rooms = [
