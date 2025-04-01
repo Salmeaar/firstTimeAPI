@@ -43,7 +43,10 @@ rooms = [
 #all rooms
 @app.get("/rooms/")
 def vacants():
-    return rooms
+    with conn.cursor() as cur:
+        cur.execute("SELECT * FROM hotel_rooms")
+        messages = cur.fetchall()
+        return messages
     
 #one room
 @app.get("/rooms/{id}")
