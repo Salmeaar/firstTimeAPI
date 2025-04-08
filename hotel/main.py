@@ -40,12 +40,19 @@ class Booking(BaseModel):
 # ]
 
 #all rooms
-@app.get("/rooms/")
+@app.get("/rooms")
 def vacants():
         with conn.cursor() as cur:
             cur.execute("SELECT * FROM hotel_rooms")
             messages = cur.fetchall()
         return messages
+
+@app.get("/guests")
+def vacants():
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM hotel_guests")
+            guests = cur.fetchall()
+        return guests
     
 #one room
 @app.get("/rooms/{id}")
@@ -59,6 +66,27 @@ def vacant_room(id: int):
             return{"msg":"Room not found"}
         return room
     
+@app.get("/bookings")
+def get_bookings():
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT
+                hb.*,
+                hr.room_number,
+                hr.price,
+                hg.lastname,
+                hg.firstname
+            FROM hotel_bookings hb 
+            INNER JOIN hotel_rooms hr
+                on hr.id = hb.room_id
+            INNER JOIN hotel_guests hg
+                ON hg.id = hb.guest_id
+                    """)
+        bookings = cur.fetchall()
+        return bookings
+        
+
+
 
 @app.post("/bookings")
 def create_booking(booking: Booking):
