@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from datetime import date
 
 PORT=8390
 
@@ -22,7 +23,9 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, 
 class Booking(BaseModel):
     guest_id: int
     room_id: int
-    
+    datefrom: date
+    dateto: date
+   
 
 
 # rooms = [
@@ -61,9 +64,10 @@ def vacant_room(id: int):
 def create_booking(booking: Booking):
     with conn.cursor() as cur:
         cur.execute("""INSERT INTO hotel_booking
-                    (guest_id,room_id)
-                    VALUES(%s,%s) RETURNING id
-                    """,[booking.guest_id, booking.room_id])
+                    (guest_id,room_id,datefrom,dateto)
+                    VALUES(%s,%s,%s,%s) RETURNING id
+                    """,[booking.guest_id, booking.room_id,
+                        booking.dateto,booking.datefrom])
         new_id = cur.fetchone()['id']
     return {"msg": "booking created!", "id": new_id}
 
