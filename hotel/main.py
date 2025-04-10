@@ -1,10 +1,12 @@
 import os, uvicorn, psycopg
 from psycopg.rows import dict_row
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from datetime import date
+from typing import Optional
+from datetime import date, timedelta
+from markupsafe import escape
 
 PORT=8390
 
@@ -21,11 +23,23 @@ app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 class Booking(BaseModel):
-    guest_id: int
     room_id: int
     datefrom: date
     dateto: date
-   
+    addinfo: Optional[str] = ""
+
+#validera API key   
+def validate_key(api_key: str = ""):
+    if not api_key:
+        raise HTTPException(status_code=401, detail={"error":"API-KEY missing"})
+
+    with conn.cursor() as cur:
+            cur.execute("""SELECT * FROM hotel_guests WHERE api_key = %s""", [api_key,])
+            guest = cur.fetchone()
+            if not guest:
+                 raise HTTPException(status_code=401, detail={"error":"Bad API key!"})
+            print(f"Valid key, guest {guest['id']},{guest['firstname']}")
+            return guest
 
 
 # rooms = [
@@ -76,35 +90,42 @@ def vacant_room(id: int):
         return room
     
 @app.get("/bookings")
-def get_bookings():
+def get_bookings(guest: dict=Depends(validate_key)):
     with conn.cursor() as cur:
         cur.execute("""
-            SELECT
+            SELECT 
                 hb.*,
+                (hb.dateto - hb.datefrom + 1) AS nights,
                 hr.room_number,
-                hr.price,
-                hg.lastname,
-                hg.firstname
-            FROM hotel_bookings hb 
-            INNER JOIN hotel_rooms hr
-                on hr.id = hb.room_id
+                hr.price as price_per_night,
+                (hb.dateto - hb.datefrom + 1) * hr.price AS total_price,
+                hg.name AS guest_name
+            FROM hotel_bookings hb
+            INNER JOIN hotel_rooms hr 
+                ON hr.id = hb.room_id
             INNER JOIN hotel_guests hg
                 ON hg.id = hb.guest_id
-                    """)
+            WHERE hb.guest_id = %s
+            ORDER BY hb.id DESC""",[guest['id']])
         bookings = cur.fetchall()
         return bookings
         
 
+     
 
 
 @app.post("/bookings")
-def create_booking(booking: Booking):
+def create_booking(booking: Booking, guest: dict = Depends(validate_key)):
     with conn.cursor() as cur:
         cur.execute("""INSERT INTO hotel_booking
-                    (guest_id,room_id,datefrom,dateto)
-                    VALUES(%s,%s,%s,%s) RETURNING id
-                    """,[booking.guest_id, booking.room_id,
-                        booking.dateto,booking.datefrom])
+                    (guest_id,
+                    room_id,
+                    datefrom,
+                    dateto,
+                    addinfo)
+                    VALUES(%s,%s,%s,%s,%s) RETURNING id
+                    """,[guest['id'], booking.room_id,
+                        booking.dateto or booking.datefrom + timedelta(days=1),booking.datefrom,escape(booking.addinfo)])
         new_id = cur.fetchone()['id']
     return {"msg": "booking created!", "id": new_id}
 
