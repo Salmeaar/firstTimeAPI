@@ -43,14 +43,23 @@ class Booking(BaseModel):
 @app.get("/rooms")
 def vacants():
         with conn.cursor() as cur:
-            cur.execute("SELECT * FROM hotel_rooms")
+            cur.execute("""
+            SELECT * 
+            FROM hotel_rooms 
+            ORDER BY room_number""")
             messages = cur.fetchall()
         return messages
 
 @app.get("/guests")
 def vacants():
         with conn.cursor() as cur:
-            cur.execute("SELECT * FROM hotel_guests")
+            cur.execute("""SELECT 
+                *,
+                (SELECT count(*) 
+                    FROM hotel_bookings 
+                    WHERE guest_id = hotel_guests.id) AS visits
+            FROM hotel_guests 
+            ORDER BY name""")
             guests = cur.fetchall()
         return guests
     
